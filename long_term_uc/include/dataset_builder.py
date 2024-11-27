@@ -11,9 +11,10 @@ import matplotlib.pyplot as plt
 from long_term_uc.common.error_msgs import print_errors_list
 from long_term_uc.common.fuel_sources import FuelSources
 from long_term_uc.common.long_term_uc_io import get_marginal_prices_file, get_network_figure, \
-    get_opt_power_file, get_price_figure
+    get_opt_power_file, get_price_figure, get_prod_figure
 from long_term_uc.include.plotter import PlotParams
 from long_term_uc.utils.basic_utils import lexico_compar_str
+from long_term_uc.utils.df_utils import rename_df_columns
 from long_term_uc.utils.pypsa_utils import get_network_obj_value
 
 
@@ -77,6 +78,13 @@ def set_gen_unit_name(country: str, agg_prod_type: str) -> str:
 
 GEN_UNITS_DATA_TYPE = Dict[str, List[GenerationUnitData]]
 PYPSA_RESULT_TYPE = Tuple[str, str]
+
+
+def set_col_order_for_plot(df: pd.DataFrame, cols_ordered: List[str]) -> pd.DataFrame:
+    current_df_cols = list(df.columns)
+    current_df_cols_ordered = [col for col in cols_ordered if col in current_df_cols]
+    df = df[current_df_cols_ordered]
+    return df
 
 
 @dataclass
@@ -200,9 +208,33 @@ class PypsaModel:
         logging.info(f"Optimisation resolution status is {pypsa_resol_status} with objective value (cost) = {objective_value:.2f} -> output data (resp. figures) can be generated")
         return objective_value
     
+    def plot_opt_prod_var(self, plot_params: PlotParams, country: str, year: int, 
+                          climatic_year: int, start_horizon: datetime):
+        """ 
+        Plot 'stack' of optimized production profiles
+        """
+        # sort values to get only prod of given country
+        country_trigram = set_country_trigram(country=country)
+        country_prod_cols = [prod_unit_name for prod_unit_name in list(self.prod_var_opt) 
+                             if prod_unit_name.startswith(country_trigram)]
+        current_prod_var_opt = self.prod_var_opt[country_prod_cols]
+        # suppress trigram from prod unit names to simplify legend in figures
+        new_prod_cols = {col: col[4:] for col in country_prod_cols}
+        current_prod_var_opt = rename_df_columns(df=current_prod_var_opt, old_to_new_cols=new_prod_cols)
+        current_prod_var_opt = set_col_order_for_plot(df=current_prod_var_opt, 
+                                                      cols_ordered=plot_params.agg_prod_type_order)
+        current_prod_var_opt.div(1e3).plot.area(subplots=False, ylabel="GW", 
+                                                color=plot_params.per_agg_prod_type_color)
+        plt.savefig(get_prod_figure(country=country, year=year, 
+                                    climatic_year=climatic_year, start_horizon=start_horizon))
+        plt.tight_layout()
+        plt.close()
+
     def plot_marginal_price(self, plot_params: PlotParams, year: int, climatic_year: int, start_horizon: datetime):
-        self.network.buses_t.marginal_price.plot.line(figsize=(8, 3), ylabel="Euro per MWh", 
-                                                      color=plot_params.per_zone_color)
+        sde_dual_var_opt_plot = set_col_order_for_plot(df=self.sde_dual_var_opt,
+                                                       cols_ordered=plot_params.zone_order)
+        sde_dual_var_opt_plot.plot.line(figsize=(8, 3), ylabel="Euro per MWh",
+                                        color=plot_params.per_zone_color)
         plt.tight_layout()
         plt.savefig(get_price_figure(country='europe', year=year, climatic_year=climatic_year,
                                      start_horizon=start_horizon)
@@ -306,18 +338,5 @@ def plot_uc_run_figs(network: pypsa.Network, countries: List[str], year: int, uc
         country_bus_name = get_country_bus_name(country=country)
         network.generators.p_nom_opt.drop(f"Failure_{country_bus_name}").div(1e3).plot.bar(ylabel="GW", figsize=(8, 3))
     # [Coding trick] Matplotlib can directly adapt size of figure to fit with values plotted
-    plt.tight_layout()
-    plt.close()
-
-    # And "stack" of optimized production profiles
-    network.generators_t.p.div(1e3).plot.area(subplots=False, ylabel="GW")
-    from long_term_uc.common.long_term_uc_io import get_prod_figure, get_price_figure
-    plt.savefig(get_prod_figure(country=country, year=year, start_horizon=uc_period_start))
-    plt.tight_layout()
-    plt.close()
-
-    # Finally, "marginal prices" -> meaning? How can you interprete the very constant value plotted?
-    network.buses_t.marginal_price.mean(1).plot.area(figsize=(8, 3), ylabel="Euro per MWh")
-    plt.savefig(get_price_figure(country=country, year=year, start_horizon=uc_period_start))
     plt.tight_layout()
     plt.close()

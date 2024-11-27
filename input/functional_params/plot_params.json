@@ -12,12 +12,42 @@
       "sca": "blue"
     }
   },
+  "zone_order": [
+    "ben",
+    "fra",
+    "ger",
+    "ibe",
+    "ita",
+    "pol",
+    "sca"
+  ],
+  "agg_prod_type_order": [
+    "wind_onshore",
+    "wind_offshore",
+    "solar_pv",
+    "solar_thermal",
+    "others_fatal",
+    "hydro_pondage",
+    "hydro_run_of_river",
+    "hydro_pump_storage_closed_loop",
+    "hydro_pump_storage_open_loop",
+    "hydro_reservoir",
+    "nuclear",
+    "biofuel",
+    "coal",
+    "gas",
+    "oil",
+    "batteries",
+    "dsr",
+    "failure"
+  ],
   "agg_prod_type_palettes_def": {
     "own": {
       "batteries": "pink",
       "biofuel": "green",
       "coal": "brown",
       "dsr": "red",
+      "failure": "gold",
       "gas": "grey",
       "hydro_pondage": "blue",
       "hydro_pump_storage_closed_loop": "blue",

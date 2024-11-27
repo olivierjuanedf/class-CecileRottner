@@ -48,3 +48,8 @@ def get_subdf_from_date_range(df: pd.DataFrame, date_col: str, date_min: datetim
 def create_dict_from_cols_in_df(df: pd.DataFrame, key_col, val_col) -> dict:
     df_to_dict = df[[key_col, val_col]]
     return dict(pd.MultiIndex.from_frame(df_to_dict))
+
+
+def rename_df_columns(df: pd.DataFrame, old_to_new_cols: dict) -> pd.DataFrame:
+    df.rename(columns=old_to_new_cols, inplace=True)
+    return df
