@@ -1,9 +1,5 @@
-import sys
+import logging
 from typing import List
-
-
-def print_out_msg(msg_level: str, msg: str):
-    print(f"[{msg_level.upper()}] {msg}")
 
 
 def print_errors_list(error_name: str, errors_list: List[str]):
@@ -11,9 +7,8 @@ def print_errors_list(error_name: str, errors_list: List[str]):
     for elt_error in errors_list:
         error_msg += f"\n- {elt_error}"
     error_msg += "\n-> STOP"
-    print_out_msg(msg_level="error", msg=error_msg)
+    logging.error(error_msg)
     
 
 def uncoherent_param_stop(param_errors: List[str]):
     print_errors_list(error_name="in JSON params to be modif. file", errors_list=param_errors)
-

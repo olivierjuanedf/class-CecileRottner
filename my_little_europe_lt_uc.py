@@ -5,17 +5,24 @@ import warnings
 #deactivate some annoying and useless warnings in pypsa/pandas
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
+import logging
 
-from long_term_uc.utils.read import read_and_check_uc_run_params
+from long_term_uc.common.fuel_sources import FUEL_SOURCES
+from long_term_uc.common.logger import init_logger, stop_logger
+from long_term_uc.common.long_term_uc_io import OUTPUT_FOLDER_LT
+from long_term_uc.include.dataset_builder import PypsaModel
 from long_term_uc.utils.basic_utils import get_period_str
 from long_term_uc.include.dataset import Dataset
-from long_term_uc.utils.read import read_and_check_pypsa_static_params
 from long_term_uc.utils.pypsa_utils import OPTIM_RESOL_STATUS
-from long_term_uc.include.dataset_builder import PypsaModel
-from long_term_uc.common.fuel_sources import FUEL_SOURCES
+from long_term_uc.utils.read import read_and_check_uc_run_params, read_and_check_pypsa_static_params
 
 
 usage_params, eraa_data_descr, uc_run_params = read_and_check_uc_run_params()
+
+logger = init_logger(logger_dir=OUTPUT_FOLDER_LT, logger_name="eraa_lt_uc_pb",
+                     log_level=usage_params.log_level)
+
+logging.info(f"Start ERAA-PyPSA long-term Unit Commitment (UC) simulation")
 
 """
 Get needed data (demand, RES Capa. Factors, installed generation capacities)
@@ -23,7 +30,7 @@ Get needed data (demand, RES Capa. Factors, installed generation capacities)
 uc_period_msg = get_period_str(period_start=uc_run_params.uc_period_start, 
                                period_end=uc_run_params.uc_period_end)
 
-print(f"Read needed ERAA ({eraa_data_descr.eraa_edition}) data for period {uc_period_msg}")
+logging.info(f"Read needed ERAA ({eraa_data_descr.eraa_edition}) data for period {uc_period_msg}")
 # initialize dataset object
 eraa_dataset = Dataset(source=f"eraa_{eraa_data_descr.eraa_edition}", 
                        agg_prod_types_with_cf_data=eraa_data_descr.agg_prod_types_with_cf_data, 
@@ -32,7 +39,7 @@ eraa_dataset = Dataset(source=f"eraa_{eraa_data_descr.eraa_edition}",
 eraa_dataset.get_countries_data(uc_run_params=uc_run_params,
                                 aggreg_prod_types_def=eraa_data_descr.aggreg_prod_types_def)
 
-print("Get generation units data, from both ERAA data - read just before - and JSON parameter file")
+logging.info("Get generation units data, from both ERAA data - read just before - and JSON parameter file")
 eraa_dataset.get_generation_units_data(uc_run_params=uc_run_params, 
                                        pypsa_unit_params_per_agg_pt=eraa_data_descr.pypsa_unit_params_per_agg_pt,
                                        units_complem_params_per_agg_pt=eraa_data_descr.units_complem_params_per_agg_pt)
@@ -42,7 +49,7 @@ eraa_dataset.set_committable_param()
 #   generation_units_data = overwrite_gen_units_fuel_src_params(generation_units_data=generation_units_data, 
 #                                                               updated_fuel_sources_params=uc_run_params.updated_fuel_sources_params)
 
-print("Check that 'minimal' PyPSA parameters for unit creation have been provided (in JSON files)/read (from ERAA data)")
+logging.info("Check that 'minimal' PyPSA parameters for unit creation have been provided (in JSON files)/read (from ERAA data)")
 pypsa_static_params = read_and_check_pypsa_static_params()
 eraa_dataset.control_min_pypsa_params_per_gen_units(pypsa_min_unit_params_per_agg_pt=pypsa_static_params.min_unit_params_per_agg_pt)
 
@@ -65,7 +72,7 @@ pypsa_model.add_energy_carrier(fuel_sources=FUEL_SOURCES)
 pypsa_model.add_generators(generators_data=eraa_dataset.generation_units_data)
 pypsa_model.add_loads(demand=eraa_dataset.demand)
 pypsa_model.add_interco_links(countries=uc_run_params.selected_countries, interco_capas=eraa_dataset.interco_capas)
-print("PyPSA network main properties:", pypsa_model.network)
+logging.info("PyPSA network main properties:", pypsa_model.network)
 # plot network
 from long_term_uc.include.plotter import PlotParams
 plot_params = PlotParams()
@@ -74,7 +81,6 @@ pypsa_model.plot_network()
 result = pypsa_model.optimize_network(year=uc_run_params.selected_target_year,
                                       n_countries=len(uc_run_params.selected_countries),
                                       period_start=uc_run_params.uc_period_start)
-print("THE END of European PyPSA-ERAA UC simulation... now you can hack it!")
 
 pypsa_opt_resol_status = OPTIM_RESOL_STATUS.optimal
 # TODO[perpi]: reactivate prod plot, using colors set in JSON file
@@ -98,5 +104,7 @@ if result[1] == pypsa_opt_resol_status:
                                           climatic_year=uc_run_params.selected_climatic_year,
                                           start_horizon=uc_run_params.uc_period_start)
 else:
-   print(f"Optimisation resolution status is not {pypsa_opt_resol_status} -> output data (resp. figures) cannot be saved (resp. plotted)")
-   
+   logging.info(f"Optimisation resolution status is not {pypsa_opt_resol_status} -> output data (resp. figures) cannot be saved (resp. plotted)")
+
+logging.info("THE END of ERAA-PyPSA long-term UC simulation!")
+stop_logger()

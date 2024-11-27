@@ -1,20 +1,24 @@
-import sys
+import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 from long_term_uc.common.constants_datatypes import DatatypesNames
 from long_term_uc.common.constants_extract_eraa_data import ERAADatasetDescr
 from long_term_uc.common.constants_temporal import DATE_FORMAT_IN_JSON, MAX_DATE_IN_DATA, N_DAYS_DATA_ANALYSIS_DEFAULT
-from long_term_uc.common.error_msgs import print_out_msg, uncoherent_param_stop
+from long_term_uc.common.error_msgs import uncoherent_param_stop
 from long_term_uc.utils.type_checker import apply_params_type_check
 
 
 @dataclass
 class AnalysisTypes: 
     calc: str = "calc"
-    plot: str = "plot"
-    plot_duration_curve: str = "plot_duration_curve"
-    plot_rolling_horizon_avg: str = "plot_rolling_horizon_avg"
+    # only extract data from data folder and put it in output folder
+    extract: str = "extract"
+    # idem, put putting it on "matricial format", with different climatic years in column
+    extract_to_mat: str = "extract_to_mat"
+    plot: str = "plot"  # simple plot
+    plot_duration_curve: str = "plot_duration_curve"  # duration curve plot
+    plot_rolling_horizon_avg: str = "plot_rolling_horizon_avg"  # rolling horizon avg plot
 
 
 ANALYSIS_TYPES = AnalysisTypes()
@@ -65,8 +69,7 @@ class DataAnalysis:
             self.period_start = datetime(year=1900, month=1, day=1)
             self.period_end = datetime(year=1900, month=12, day=1)
             if self.period_end is not None:
-                print_out_msg(msg_level="warning", 
-                              msg=f"End of period {self.period_end} cannot be used as start not defined")
+                logging.warning(f"End of period {self.period_end} cannot be used as start not defined")
         else:
             self.period_start = datetime.strptime(self.period_start, DATE_FORMAT_IN_JSON) 
             if self.period_end is None:       
@@ -98,8 +101,8 @@ class DataAnalysis:
         if len(errors_list) > 0:
             uncoherent_param_stop(param_errors=errors_list)
         else:
-            print_out_msg(msg_level="info", msg="Input data analysis PARAMETERS ARE COHERENT!")
-            print_out_msg(msg_level="info", msg=f"ANALYSIS CAN START with parameters: {str(self)}")
+            logging.info("Input data analysis PARAMETERS ARE COHERENT!")
+            logging.info(f"ANALYSIS CAN START with parameters: {str(self)}")
 
     def get_full_datatype(self) -> tuple:
         if self.data_subtype is None:

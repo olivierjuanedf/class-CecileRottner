@@ -1,7 +1,8 @@
 import sys
+import logging
 from typing import Dict
 
-from long_term_uc.common.error_msgs import print_errors_list, print_out_msg
+from long_term_uc.common.error_msgs import print_errors_list
 
 
 # basic checker
@@ -94,11 +95,10 @@ def check_str_str_list_of_str_dict(data_val) -> bool:
 # generic function to apply a given type checker
 def apply_data_type_check(data_type: str, data_val) -> bool:
     if data_type not in CHECK_FUNCTIONS:
-        print_out_msg(msg_level="error", msg=f"Unknown data type for check {data_type} -> STOP")
+        logging.error(f"Unknown data type for check {data_type} -> STOP")
         sys.exit(1)
     if CHECK_FUNCTIONS[data_type] is None:
-        print_out_msg(msg_level="error", 
-                      msg=f"Function to check data type {data_type} is None (not defined) -> STOP")
+        logging.error(f"Function to check data type {data_type} is None (not defined) -> STOP")
         sys.exit(1)
     return list(map(CHECK_FUNCTIONS[data_type], [data_val]))[0]
 

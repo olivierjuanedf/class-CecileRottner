@@ -1,7 +1,6 @@
 import json
 from typing import List
-from copy import deepcopy
-
+import logging
 
 from long_term_uc.common.long_term_uc_io import get_json_usage_params_file, get_json_fixed_params_file, \
     get_json_eraa_avail_values_file, get_json_params_tb_modif_file, get_json_pypsa_static_params_file, \
@@ -10,7 +9,6 @@ from long_term_uc.common.long_term_uc_io import get_json_usage_params_file, get_
 from long_term_uc.common.constants_extract_eraa_data import USAGE_PARAMS_SHORT_NAMES, ERAADatasetDescr, \
     PypsaStaticParams, UsageParameters
 from long_term_uc.common.uc_run_params import UCRunParams
-from long_term_uc.common.error_msgs import print_out_msg
 from long_term_uc.include.dataset_analyzer import DataAnalysis
 from long_term_uc.utils.dir_utils import check_file_existence
 
@@ -36,8 +34,7 @@ def read_and_check_uc_run_params() -> (UsageParameters, ERAADatasetDescr, UCRunP
     # TODO[ATHENS]: read 3 JSON files then func check_and_run UC (allow)
     # for the students script (i) call read + (ii) own loop changing parameters (iii) call check_and_run
     # WITH run_name param to identify file with output results (if None no suffix added)
-    print_out_msg(msg_level="info", 
-                  msg=f"Read and check long-term UC parameters; the ones modified in file {json_params_tb_modif_file}")
+    logging.info(f"Read and check long-term UC parameters; the ones modified in file {json_params_tb_modif_file}")
     # read them and do some basic operations on obtained dictionaries
     json_usage_params_data = check_and_load_json_file(json_file=json_usage_params_file,
                                                       file_descr="JSON usage params")
@@ -57,8 +54,7 @@ def read_and_check_uc_run_params() -> (UsageParameters, ERAADatasetDescr, UCRunP
     json_fuel_sources_tb_modif = check_and_load_json_file(json_file=json_fuel_sources_tb_modif_file,
                                                           file_descr="JSON fuel sources params to be modif.")
     # check that modifications in JSON in which it is allowed are allowed/coherent
-    print_out_msg(msg_level="info", 
-                  msg="... and check that modifications done are coherent with available ERAA data")
+    logging.info("... and check that modifications done are coherent with available ERAA data")
     usage_params = UsageParameters(**json_usage_params_data)
 
     eraa_data_descr = ERAADatasetDescr(**json_params_fixed)
@@ -78,23 +74,23 @@ def read_and_check_uc_run_params() -> (UsageParameters, ERAADatasetDescr, UCRunP
         if usage_params.mode == "solo" and usage_params.team != country:
             continue
         if country not in eraa_data_descr.available_countries:
-            print(f'[ERROR] incorrect country found in file {file}: {country} is not available in dataset')
+            logging.error(f'Incorrect country found in file {file}: {country} is not available in dataset')
             exit(1)
         for k, _ in countries_data.items():
             if usage_params.mode == 'solo':
                 for c, _ in json_country[k].items():
-                    print(f'[INFO] updating {k} for country {c} from file {file}')
+                    logging.info(f'Updating {k} for country {c} from file {file}')
                     countries_data[k][c] = json_country[k][c]
             else:
-                print(f'[INFO] updating {k} for {country} from file {file}')
+                logging.info(f'Updating {k} for {country} from file {file}')
                 countries_data[k][country] = json_country[k][country]
                 for c, _ in json_country[k].items():
                     if c != country:
-                        print(f'[WARNING] ignoring {k} for {country} from file {file}')
+                        logging.warning(f'Ignoring {k} for {country} from file {file}')
 
     if len(countries_data['selected_prod_types']) > 0:
         for c, v in countries_data['selected_prod_types'].items():
-            print(f'[WARNING] selected production type overwritten for {c}')
+            logging.warning(f'Selected production type overwritten for {c}')
             json_params_tb_modif['selected_prod_types'][c] = v
         del countries_data['selected_prod_types']
 
@@ -110,8 +106,7 @@ def read_and_check_uc_run_params() -> (UsageParameters, ERAADatasetDescr, UCRunP
 
 def read_and_check_pypsa_static_params() -> PypsaStaticParams:
     json_pypsa_static_params_file = get_json_pypsa_static_params_file()
-    print_out_msg(msg_level="info", 
-                  msg=f"Read and check PyPSA static parameters file; the ones modified in file {json_pypsa_static_params_file}")
+    logging.info(f"Read and check PyPSA static parameters file; the ones modified in file {json_pypsa_static_params_file}")
 
     json_pypsa_static_params = check_and_load_json_file(json_file=json_pypsa_static_params_file,
                                                         file_descr="JSON PyPSA static params")
@@ -123,8 +118,7 @@ def read_and_check_pypsa_static_params() -> PypsaStaticParams:
 
 def read_and_check_data_analysis_params(eraa_data_descr: ERAADatasetDescr) -> List[DataAnalysis]:
     json_data_analysis_params_file = get_json_data_analysis_params_file()
-    print_out_msg(msg_level="info", 
-                  msg=f"Read and check data analysis parameters file; the ones modified in file {json_data_analysis_params_file}")
+    logging.info(f"Read and check data analysis parameters file; the ones modified in file {json_data_analysis_params_file}")
 
     json_data_analysis_params = check_and_load_json_file(json_file=json_data_analysis_params_file,
                                                          file_descr="JSON data analysis params")

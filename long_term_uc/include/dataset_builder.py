@@ -2,6 +2,7 @@ from pathlib import Path
 from datetime import datetime
 import pandas as pd
 import numpy as np
+import logging
 from typing import Dict, List, Tuple, Optional, Union
 from dataclasses import dataclass
 import pypsa
@@ -87,39 +88,39 @@ class PypsaModel:
 
     def init_pypsa_network(self, date_idx: pd.Index, date_range: pd.DatetimeIndex = None):
         # TODO: type date_idx, date_range
-        print("Initialize PyPSA network")
+        logging.info("Initialize PyPSA network")
         self.network = pypsa.Network(snapshots=date_idx)
         if date_range is not None:
             self.network.set_snapshots(date_range[:-1])
 
     def add_gps_coordinates(self, countries_gps_coords: Dict[str, Tuple[float, float]]):
-        print("Add GPS coordinates") 
+        logging.info("Add GPS coordinates") 
         for country, gps_coords in countries_gps_coords.items():
             country_bus_name = get_country_bus_name(country=country)
             self.network.add("Bus", name=f"{country_bus_name}", x=gps_coords[0], y=gps_coords[1])
 
     def add_energy_carrier(self, fuel_sources: Dict[str, FuelSources]):
-        print("Add energy carriers")
+        logging.info("Add energy carriers")
         for carrier in list(fuel_sources.keys()):
             self.network.add("Carrier", name=carrier, co2_emissions=fuel_sources[carrier].co2_emissions/1000)
 
     def add_generators(self, generators_data: Dict[str, List[GenerationUnitData]]):
-        print("Add generators - associated to their respective buses")
+        logging.info("Add generators - associated to their respective buses")
         for country, gen_units_data in generators_data.items():
             country_bus_name = get_country_bus_name(country=country)
             for gen_unit_data in gen_units_data:
                 pypsa_gen_unit_dict = gen_unit_data.__dict__
-                print(country, pypsa_gen_unit_dict)
+                logging.info(f"{country}, {pypsa_gen_unit_dict}")
                 if pypsa_gen_unit_dict.get(GEN_UNITS_PYPSA_PARAMS.max_hours, None) is not None:
                     self.network.add("StorageUnit", bus=f"{country_bus_name}", **pypsa_gen_unit_dict, state_of_charge_initial = pypsa_gen_unit_dict[GEN_UNITS_PYPSA_PARAMS.power_capa] * pypsa_gen_unit_dict[GEN_UNITS_PYPSA_PARAMS.max_hours] * 0.8
     )
                 else:
                     self.network.add("Generator", bus=f"{country_bus_name}", **pypsa_gen_unit_dict)
-        print("Considered generators", self.network.generators)
-        print("Considered storage units", self.network.storage_units)
+        logging.info(f"Considered generators: {self.network.generators}")
+        logging.info(f"Considered storage units: {self.network.storage_units}")
 
     def add_loads(self, demand: Dict[str, pd.DataFrame]):
-        print("Add loads - associated to their respective buses")
+        logging.info("Add loads - associated to their respective buses")
         for country in demand:
             country_bus_name = get_country_bus_name(country=country)
             load_data = {"name": f"{country_bus_name}-load", "bus": f"{country_bus_name}",
@@ -127,7 +128,7 @@ class PypsaModel:
             self.network.add("Load", **load_data)
 
     def add_interco_links(self, countries: List[str], interco_capas: Dict[Tuple[str, str], float]):
-        print(f"Add interco. links - between the selected countries: {countries}")
+        logging.info(f"Add interco. links - between the selected countries: {countries}")
         links = []
         symmetric_links = []
         links_wo_capa_msg = []
@@ -181,9 +182,9 @@ class PypsaModel:
         Solve the optimization UC problem associated to current network
         :returns a tuple (xxx, status of resolution)
         """
-        print("Optimize 'network' - i.e. solve associated UC problem")
+        logging.info("Optimize 'network' - i.e. solve associated UC problem")
         result = self.network.optimize(solver_name="highs")
-        print(result)
+        logging.info(result)
         if save_lp_file is True:
             save_lp_model(self.network, year=year, n_countries=n_countries, period_start=period_start)
         return result
@@ -196,7 +197,7 @@ class PypsaModel:
 
     def get_opt_value(self, pypsa_resol_status: str) -> float: 
         objective_value = get_network_obj_value(network=self.network)
-        print(f"Optimisation resolution status is {pypsa_resol_status} with objective value (cost) = {objective_value:.2f} -> output data (resp. figures) can be generated")
+        logging.info(f"Optimisation resolution status is {pypsa_resol_status} with objective value (cost) = {objective_value:.2f} -> output data (resp. figures) can be generated")
         return objective_value
     
     def plot_marginal_price(self, plot_params: PlotParams, year: int, climatic_year: int, start_horizon: datetime):
@@ -209,13 +210,13 @@ class PypsaModel:
         plt.close()
 
     def save_opt_decisions_to_csv(self, year: int, climatic_year: int, start_horizon: datetime):
-        print("Save optimal dispatch decisions to .csv file")
+        logging.info("Save optimal dispatch decisions to .csv file")
         opt_p_csv_file = get_opt_power_file(country='europe', year=year, climatic_year=climatic_year,
                                             start_horizon=start_horizon)
         self.prod_var_opt.to_csv(opt_p_csv_file)
 
     def save_marginal_prices_to_csv(self, year: int, climatic_year: int, start_horizon: datetime):
-        print("Save marginal prices decisions to .csv file")
+        logging.info("Save marginal prices decisions to .csv file")
         marginal_prices_csv_file = get_marginal_prices_file(country='europe', year=year, 
                                                             climatic_year=climatic_year,
                                                             start_horizon=start_horizon)
@@ -267,7 +268,7 @@ def set_period_start_file(year: int, period_start: datetime) -> str:
 
 
 def save_lp_model(network: pypsa.Network, year: int, n_countries: int, period_start: datetime):
-    print("Save lp model")
+    logging.info("Save lp model")
     import pypsa.optimization as opt
     from long_term_uc.common.long_term_uc_io import OUTPUT_DATA_FOLDER
 
@@ -297,7 +298,7 @@ def get_stationary_batt_opt_dec(network: pypsa.Network, countries: List[str]):
 def plot_uc_run_figs(network: pypsa.Network, countries: List[str], year: int, uc_period_start: datetime):
     # TODO: use this function
     import matplotlib.pyplot as plt
-    print("Plot generation and prices figures")
+    logging.info("Plot generation and prices figures")
 
     # p_nom_opt is the optimized capacity (that can be also a variable in PyPSA...
     # but here not optimized -> values in input data plotted)

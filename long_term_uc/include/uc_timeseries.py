@@ -1,7 +1,7 @@
 import os
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List
+from typing import Dict, List, Union
 import numpy as np
 import pandas as pd
 
@@ -26,6 +26,19 @@ class UCTimeseries:
         self.values = np.array(df[col_name])
         if unit is not None:
             self.unit = unit
+
+    def to_csv(self, output_dir: str, complem_columns: Dict[str, Union[list, np.ndarray]]):
+        if self.dates is None:
+            idx_col = "time_slot"
+            idx_range = np.arange(len(self.values)) + 1
+        else:
+            idx_col = "date"
+            idx_range = self.dates
+        values_dict = {idx_col: idx_range, "value": self.values}
+        for col_name, col_vals in complem_columns.items():
+            values_dict[col_name] = col_vals
+        df_to_csv = pd.DataFrame(values_dict)
+        
 
     def set_plot_ylabel(self) -> str:
         ylabel = self.data_type[0].capitalize()
@@ -72,3 +85,11 @@ def list_of_uc_timeseries_to_df(uc_timeseries: List[UCTimeseries]) -> pd.DataFra
     if uc_timeseries[0].dates is not None:
         uc_ts_dict["date"] = uc_timeseries[0].dates
     return pd.DataFrame(uc_ts_dict)
+
+
+def list_of_uc_ts_to_csv(list_of_uc_ts: List[UCTimeseries], output_dir: str, to_matrix_format: bool = False):
+    # 1 file per UC timeseries
+    if to_matrix_format is False:
+        for uc_ts in list_of_uc_ts:
+            uc_ts.to_csv(output_dir: str)
+

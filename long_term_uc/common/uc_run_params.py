@@ -1,11 +1,12 @@
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple, Union
+import logging
 
 from long_term_uc.common.constants_extract_eraa_data import ERAADatasetDescr
 from long_term_uc.common.constants_temporal import DATE_FORMAT_IN_JSON, MIN_DATE_IN_DATA, \
     MAX_DATE_IN_DATA, N_DAYS_UC_DEFAULT
-from long_term_uc.common.error_msgs import print_out_msg, uncoherent_param_stop
+from long_term_uc.common.error_msgs import uncoherent_param_stop
 from long_term_uc.utils.basic_utils import get_period_str, are_lists_eq
 from long_term_uc.utils.eraa_utils import set_interco_to_tuples
 
@@ -43,16 +44,14 @@ class UCRunParams:
         return repr_str
 
     def process(self, available_countries: List[str]):
-        print('*'*30)
-        print(self.updated_capacities_prod_types)
-        print('*'*30)
+        logging.info('*'*30 + f"{self.updated_capacities_prod_types}" + '*'*30)
         # if dates in str format, cast them as datetime
         # - setting end of period to default value if not provided
         if isinstance(self.uc_period_start, str):
             self.uc_period_start = datetime.strptime(self.uc_period_start, DATE_FORMAT_IN_JSON)
         if self.uc_period_end is None:
             self.uc_period_end = min(MAX_DATE_IN_DATA, self.uc_period_start + timedelta(days=N_DAYS_UC_DEFAULT))
-            print(f"End of period set to default value: {self.uc_period_end:%Y/%m/%d} (period of {N_DAYS_UC_DEFAULT} days; with bound on 1900, Dec. 31th)")
+            logging.info(f"End of period set to default value: {self.uc_period_end:%Y/%m/%d} (period of {N_DAYS_UC_DEFAULT} days; with bound on 1900, Dec. 31th)")
         elif isinstance(self.uc_period_end, str):
             self.uc_period_end = datetime.strptime(self.uc_period_end, DATE_FORMAT_IN_JSON)
         # replace None and missing countries in dict of aggreg. prod. types
@@ -68,9 +67,7 @@ class UCRunParams:
                                                    return_corresp=True)
             self.interco_capas_updated_values = {interco_tuples[key]: val
                                                for key, val in self.interco_capas_updated_values.items()}
-        print('*'*30)
-        print(self.selected_prod_types)
-        print('*'*30)
+        logging.info('*'*30 + f"self.selected_prod_types" + '*'*30)
         # keep only updated source params values that are non None
         new_updated_fuel_source_params = {}
         for source, params in self.updated_fuel_sources_params.items():
@@ -169,8 +166,8 @@ class UCRunParams:
         if len(errors_list) > 0:
             uncoherent_param_stop(param_errors=errors_list)
         else:
-            print_out_msg(msg_level="info", msg="Modified LONG-TERM UC PARAMETERS ARE COHERENT!")
-            print_out_msg(msg_level="info", msg=f"RUN CAN START with parameters: {str(self)}")
+            logging.info("Modified LONG-TERM UC PARAMETERS ARE COHERENT!")
+            logging.info(f"RUN CAN START with parameters: {str(self)}")
 
     def set_countries(self, countries: List[str]):
         self.selected_countries = countries

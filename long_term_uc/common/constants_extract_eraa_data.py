@@ -13,6 +13,7 @@ USAGE_PARAMS_SHORT_NAMES = {
     "allow_manually_adding_demand": "manually_adding_demand",
     "allow_manually_adding_generators": "manually_adding_generators",
     "apply_cf_techno_breakthrough": "apply_cf_techno_breakthrough",
+    "log_level": "log_level",
     "res_cf_stress_test_folder": "res_cf_stress_test_folder",
     "res_cf_stress_test_cy": "res_cf_stress_test_cy", 
     "mode": "mode",
@@ -61,6 +62,7 @@ class UsageParameters:
     manually_adding_generators: bool = False
     mode: Mode = "solo"
     team: Optional[str] = None
+    log_level: str = "info"
     # parameters for climate-based "sensitivity" tests
     apply_cf_techno_breakthrough: bool = False
     res_cf_stress_test_folder: str = None
