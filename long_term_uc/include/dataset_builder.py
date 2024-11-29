@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from long_term_uc.common.error_msgs import print_errors_list
 from long_term_uc.common.fuel_sources import FuelSources
 from long_term_uc.common.long_term_uc_io import get_marginal_prices_file, get_network_figure, \
-    get_opt_power_file, get_price_figure, get_prod_figure
+    get_opt_power_file, get_price_figure, get_prod_figure, get_storage_opt_dec_file
 from long_term_uc.include.plotter import PlotParams
 from long_term_uc.utils.basic_utils import lexico_compar_str
 from long_term_uc.utils.df_utils import rename_df_columns
@@ -95,7 +95,7 @@ class PypsaModel:
     sde_dual_var_opt: pd.DataFrame = None  # idem for SDE constraint dual variable
     storage_prod_var_opt: pd.DataFrame = None  # idem for Storage prod -> prod (turbining)
     storage_cons_var_opt: pd.DataFrame = None  # idem for Storage prod -> cons (pumping)
-    storage_soc: pd.DataFrame = None  # idem for Storage prod -> SoC (State-of-Charge)
+    storage_soc_opt: pd.DataFrame = None  # idem for Storage prod -> SoC (State-of-Charge)
 
     def init_pypsa_network(self, date_idx: pd.Index, date_range: pd.DatetimeIndex = None):
         # TODO: type date_idx, date_range
@@ -206,7 +206,7 @@ class PypsaModel:
     def get_storage_vars_opt(self):
         self.storage_prod_var_opt = self.network.storage_units_t.p
         self.storage_cons_var_opt = self.network.storage_units_t.p_store
-        self.storage_soc = self.network.storage_units_t.state_of_charge
+        self.storage_soc_opt = self.network.storage_units_t.state_of_charge
 
     def get_sde_dual_var_opt(self):
         self.sde_dual_var_opt = self.network.buses_t.marginal_price
@@ -250,10 +250,22 @@ class PypsaModel:
         plt.close()
 
     def save_opt_decisions_to_csv(self, year: int, climatic_year: int, start_horizon: datetime):
-        logging.info("Save optimal dispatch decisions to .csv file")
-        opt_p_csv_file = get_opt_power_file(country='europe', year=year, climatic_year=climatic_year,
+        country = "europe"
+        # opt prod decisions for all but Storage assets
+        opt_p_csv_file = get_opt_power_file(country=country, year=year, climatic_year=climatic_year,
                                             start_horizon=start_horizon)
+        logging.info(f"Save - all but Storage assets - optimal dispatch decisions to csv file {opt_p_csv_file}")
         self.prod_var_opt.to_csv(opt_p_csv_file)
+        # then storage assets decisions
+        storage_opt_dec_csv_file = \
+            get_storage_opt_dec_file(country=country, year=year, climatic_year=climatic_year,
+                                     start_horizon=start_horizon)
+        logging.info(f"Save Storage optimal decisions to csv file {storage_opt_dec_csv_file}")
+        # join the 3 Storage result dfs
+        # TODO: renaming first the different columns -> adding prod/cons/soc suffixes
+        df_prod_opt = self.storage_cons_var_opt
+        df_storage_all_decs = self.storage_prod_var_opt.join(self.storage_cons_var_opt).join(self.storage_soc_opt)
+        df_storage_all_decs.to_csv(storage_opt_dec_csv_file)
 
     def save_marginal_prices_to_csv(self, year: int, climatic_year: int, start_horizon: datetime):
         logging.info("Save marginal prices decisions to .csv file")

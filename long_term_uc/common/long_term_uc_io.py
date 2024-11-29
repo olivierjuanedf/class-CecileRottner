@@ -116,20 +116,30 @@ def get_output_file_named(name: str, extension:str, output_dir:str, country: str
                                          start_horizon=start_horizon)
     return f"{output_dir}/{name}_{file_suffix}.{extension}"
 
+
 def get_figure_file_named(name: str, country: str, year: int, climatic_year: int, start_horizon: datetime) -> str:
     return get_output_file_named(name, 'png', OUTPUT_FIG_FOLDER, country, year, climatic_year, start_horizon)
+
 
 def get_prod_figure(country: str, year: int, climatic_year: int, start_horizon: datetime) -> str:
     return get_figure_file_named('prod', country, year, climatic_year, start_horizon)
 
+
 def get_price_figure(country: str, year: int, climatic_year: int, start_horizon: datetime) -> str:
     return get_figure_file_named('prices', country, year, climatic_year, start_horizon)
+
 
 def get_csv_file_named(name:str, country: str, year: int, climatic_year: int, start_horizon: datetime) -> str:
     return get_output_file_named(name, 'csv', OUTPUT_DATA_FOLDER, country, year, climatic_year, start_horizon)
 
+
 def get_opt_power_file(country: str, year: int, climatic_year: int, start_horizon: datetime) -> str:
     return get_csv_file_named('opt_power', country, year, climatic_year, start_horizon)
+
+
+def get_storage_opt_dec_file(country: str, year: int, climatic_year: int, start_horizon: datetime) -> str:
+    return get_csv_file_named('storage_opt_decisions', country, year, climatic_year, start_horizon)
+
 
 def get_marginal_prices_file(country: str, year: int, climatic_year: int, start_horizon: datetime) -> str:
     return get_csv_file_named('marginal_prices', country, year, climatic_year, start_horizon)
