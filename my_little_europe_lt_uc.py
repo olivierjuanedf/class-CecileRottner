@@ -19,7 +19,7 @@ from long_term_uc.utils.read import read_and_check_uc_run_params, read_and_check
 
 usage_params, eraa_data_descr, uc_run_params = read_and_check_uc_run_params()
 
-logger = init_logger(logger_dir=OUTPUT_FOLDER_LT, logger_name="eraa_lt_uc_pb",
+logger = init_logger(logger_dir=OUTPUT_FOLDER_LT, logger_name="eraa_lt_uc_pb.log",
                      log_level=usage_params.log_level)
 
 logging.info(f"Start ERAA-PyPSA long-term Unit Commitment (UC) simulation")
@@ -88,6 +88,7 @@ if result[1] == pypsa_opt_resol_status:
   # get objective value, and associated optimal decisions / dual variables
   objective_value = pypsa_model.get_opt_value(pypsa_resol_status=pypsa_opt_resol_status)
   pypsa_model.get_prod_var_opt()
+  pypsa_model.get_storage_vars_opt()
   pypsa_model.get_sde_dual_var_opt()
   # plot - per country - opt prod profiles "stacked"
   for country in uc_run_params.selected_countries:

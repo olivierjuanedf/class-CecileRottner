@@ -91,8 +91,11 @@ def set_col_order_for_plot(df: pd.DataFrame, cols_ordered: List[str]) -> pd.Data
 class PypsaModel:
     name: str
     network: pypsa.Network = None
-    prod_var_opt: pd.DataFrame = None
-    sde_dual_var_opt: pd.DataFrame = None
+    prod_var_opt: pd.DataFrame = None  # prod opt value that will be obtained after optim.
+    sde_dual_var_opt: pd.DataFrame = None  # idem for SDE constraint dual variable
+    storage_prod_var_opt: pd.DataFrame = None  # idem for Storage prod -> prod (turbining)
+    storage_cons_var_opt: pd.DataFrame = None  # idem for Storage prod -> cons (pumping)
+    storage_soc: pd.DataFrame = None  # idem for Storage prod -> SoC (State-of-Charge)
 
     def init_pypsa_network(self, date_idx: pd.Index, date_range: pd.DatetimeIndex = None):
         # TODO: type date_idx, date_range
@@ -200,6 +203,11 @@ class PypsaModel:
     def get_prod_var_opt(self):
         self.prod_var_opt = self.network.generators_t.p
     
+    def get_storage_vars_opt(self):
+        self.storage_prod_var_opt = self.network.storage_units_t.p
+        self.storage_cons_var_opt = self.network.storage_units_t.p_store
+        self.storage_soc = self.network.storage_units_t.state_of_charge
+
     def get_sde_dual_var_opt(self):
         self.sde_dual_var_opt = self.network.buses_t.marginal_price
 
