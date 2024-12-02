@@ -87,6 +87,13 @@ def set_col_order_for_plot(df: pd.DataFrame, cols_ordered: List[str]) -> pd.Data
     return df
 
 
+def set_full_coll_for_storage_df(df: pd.DataFrame, col_suffix: str) -> pd.DataFrame:
+    old_cols = list(df.columns)
+    new_cols = {col: f"{col}_{col_suffix}" for col in old_cols}
+    df = rename_df_columns(df=df, old_to_new_cols=new_cols)
+    return df
+
+
 @dataclass
 class PypsaModel:
     name: str
@@ -262,9 +269,14 @@ class PypsaModel:
                                      start_horizon=start_horizon)
         logging.info(f"Save Storage optimal decisions to csv file {storage_opt_dec_csv_file}")
         # join the 3 Storage result dfs
-        # TODO: renaming first the different columns -> adding prod/cons/soc suffixes
-        df_prod_opt = self.storage_cons_var_opt
-        df_storage_all_decs = self.storage_prod_var_opt.join(self.storage_cons_var_opt).join(self.storage_soc_opt)
+        df_prod_opt = self.storage_prod_var_opt
+        df_cons_opt = self.storage_cons_var_opt
+        df_soc_opt = self.storage_soc_opt
+        # rename first the different columns -> adding prod/cons/soc suffixes
+        df_prod_opt = set_full_coll_for_storage_df(df=df_prod_opt, col_suffix="prod")
+        df_cons_opt = set_full_coll_for_storage_df(df=df_cons_opt, col_suffix="cons")
+        df_soc_opt = set_full_coll_for_storage_df(df=df_soc_opt, col_suffix="soc")
+        df_storage_all_decs = df_prod_opt.join(df_cons_opt).join(df_soc_opt)
         df_storage_all_decs.to_csv(storage_opt_dec_csv_file)
 
     def save_marginal_prices_to_csv(self, year: int, climatic_year: int, start_horizon: datetime):
