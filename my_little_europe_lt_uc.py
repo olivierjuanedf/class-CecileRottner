@@ -83,7 +83,7 @@ result = pypsa_model.optimize_network(year=uc_run_params.selected_target_year,
                                       period_start=uc_run_params.uc_period_start)
 
 pypsa_opt_resol_status = OPTIM_RESOL_STATUS.optimal
-# TODO[perpi]: reactivate prod plot, using colors set in JSON file
+# if optimal resolution status, save output data and plot associated figures
 if result[1] == pypsa_opt_resol_status:
   # get objective value, and associated optimal decisions / dual variables
   objective_value = pypsa_model.get_opt_value(pypsa_resol_status=pypsa_opt_resol_status)

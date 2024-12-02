@@ -94,6 +94,9 @@ def set_full_coll_for_storage_df(df: pd.DataFrame, col_suffix: str) -> pd.DataFr
     return df
 
 
+OUTPUT_DATE_COL = "date"
+
+
 @dataclass
 class PypsaModel:
     name: str
@@ -262,7 +265,9 @@ class PypsaModel:
         opt_p_csv_file = get_opt_power_file(country=country, year=year, climatic_year=climatic_year,
                                             start_horizon=start_horizon)
         logging.info(f"Save - all but Storage assets - optimal dispatch decisions to csv file {opt_p_csv_file}")
-        self.prod_var_opt.to_csv(opt_p_csv_file)
+        df_prod_opt = self.prod_var_opt
+        df_prod_opt.index.name = OUTPUT_DATE_COL
+        df_prod_opt.to_csv(opt_p_csv_file)
         # then storage assets decisions
         storage_opt_dec_csv_file = \
             get_storage_opt_dec_file(country=country, year=year, climatic_year=climatic_year,
@@ -277,6 +282,7 @@ class PypsaModel:
         df_cons_opt = set_full_coll_for_storage_df(df=df_cons_opt, col_suffix="cons")
         df_soc_opt = set_full_coll_for_storage_df(df=df_soc_opt, col_suffix="soc")
         df_storage_all_decs = df_prod_opt.join(df_cons_opt).join(df_soc_opt)
+        df_storage_all_decs.index.name = OUTPUT_DATE_COL
         df_storage_all_decs.to_csv(storage_opt_dec_csv_file)
 
     def save_marginal_prices_to_csv(self, year: int, climatic_year: int, start_horizon: datetime):
@@ -284,7 +290,9 @@ class PypsaModel:
         marginal_prices_csv_file = get_marginal_prices_file(country='europe', year=year, 
                                                             climatic_year=climatic_year,
                                                             start_horizon=start_horizon)
-        self.sde_dual_var_opt.to_csv(marginal_prices_csv_file)
+        df_sde_dual_var_opt = self.sde_dual_var_opt
+        df_sde_dual_var_opt.index.name = OUTPUT_DATE_COL
+        df_sde_dual_var_opt.to_csv(marginal_prices_csv_file)
 
     
 def overwrite_gen_units_fuel_src_params(generation_units_data: GEN_UNITS_DATA_TYPE, updated_fuel_sources_params: Dict[str, Dict[str, float]]) -> GEN_UNITS_DATA_TYPE:
