@@ -259,14 +259,16 @@ class PypsaModel:
                                      )
         plt.close()
 
-    def save_opt_decisions_to_csv(self, year: int, climatic_year: int, start_horizon: datetime):
+    def save_opt_decisions_to_csv(self, year: int, climatic_year: int, start_horizon: datetime,
+                                  rename_snapshot_col: bool = True):
         country = "europe"
         # opt prod decisions for all but Storage assets
         opt_p_csv_file = get_opt_power_file(country=country, year=year, climatic_year=climatic_year,
                                             start_horizon=start_horizon)
         logging.info(f"Save - all but Storage assets - optimal dispatch decisions to csv file {opt_p_csv_file}")
         df_prod_opt = self.prod_var_opt
-        df_prod_opt.index.name = OUTPUT_DATE_COL
+        if rename_snapshot_col is True:
+            df_prod_opt.index.name = OUTPUT_DATE_COL
         df_prod_opt.to_csv(opt_p_csv_file)
         # then storage assets decisions
         storage_opt_dec_csv_file = \
@@ -282,16 +284,19 @@ class PypsaModel:
         df_cons_opt = set_full_coll_for_storage_df(df=df_cons_opt, col_suffix="cons")
         df_soc_opt = set_full_coll_for_storage_df(df=df_soc_opt, col_suffix="soc")
         df_storage_all_decs = df_prod_opt.join(df_cons_opt).join(df_soc_opt)
-        df_storage_all_decs.index.name = OUTPUT_DATE_COL
+        if rename_snapshot_col is True:
+            df_storage_all_decs.index.name = OUTPUT_DATE_COL
         df_storage_all_decs.to_csv(storage_opt_dec_csv_file)
 
-    def save_marginal_prices_to_csv(self, year: int, climatic_year: int, start_horizon: datetime):
+    def save_marginal_prices_to_csv(self, year: int, climatic_year: int, start_horizon: datetime,
+                                    rename_snapshot_col: bool = True):
         logging.info("Save marginal prices decisions to .csv file")
         marginal_prices_csv_file = get_marginal_prices_file(country='europe', year=year, 
                                                             climatic_year=climatic_year,
                                                             start_horizon=start_horizon)
         df_sde_dual_var_opt = self.sde_dual_var_opt
-        df_sde_dual_var_opt.index.name = OUTPUT_DATE_COL
+        if rename_snapshot_col is True:
+            df_sde_dual_var_opt.index.name = OUTPUT_DATE_COL
         df_sde_dual_var_opt.to_csv(marginal_prices_csv_file)
 
     
